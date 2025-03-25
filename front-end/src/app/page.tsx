@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { redrawCanvas, redrawCanvas2 } from "@/app/utils/canvasUtils";
-import { sendDataToBackend, pollProcessingStatus, fetchProcessedImage  } from "@/app/lib/api"; 
+import { sendDataToBackend, pollProcessingStatus, fetchProcessedImages  } from "@/app/lib/api"; 
 
 export default function main() {
   const canvasOne = useRef<HTMLCanvasElement>(null);
@@ -36,7 +36,8 @@ export default function main() {
   const [sending, setSending]       = useState(false);
   const [processing, setProcessing] = useState(false);
   const [done, setDone]             = useState(false);
-  const [processedImage, setProcessedImage] = useState(null);
+  const [SAMImage, setSAMImage]     = useState(null);
+  const [trendImage, setTrendImage] = useState(null);
 
   // User inputs image file
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -221,13 +222,14 @@ export default function main() {
   };
 
   // Fetches data from Flask
-  const handleFetchProcessedImage = async () => {
-    const imageUrl = await fetchProcessedImage();
-    if (imageUrl) {
-      setProcessedImage(imageUrl);
+  const handleFetchProcessedImages = async () => {
+    const result = await fetchProcessedImages();
+    if (result) {
+      setSAMImage(result.sam);
+      setTrendImage(result.trend);
     }
   };
-
+  
   return (
     <div className="">
 
@@ -292,7 +294,7 @@ export default function main() {
       {/* Loading button */}
       <div className="flex justify-center">
         <button 
-          onClick={handleFetchProcessedImage} 
+          onClick={handleFetchProcessedImages} 
           disabled={!done}
           className="mt-4 px-4 py-2 bg-blue-500 text-white font-semibold rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
@@ -319,7 +321,11 @@ export default function main() {
         <div className="flex flex-col items-center w-1/2">
           <p className="text-center font-semibold text-lg mb-2">Trend</p>
           <div className="w-[400px] h-[300px] border flex items-center justify-center">
-            <p>Bar chart</p>
+              {trendImage ? (
+              <img src={trendImage} alt="Trend" className="w-full h-full object-contain" />
+            ) : (
+              <p>Trend Chart</p> // Placeholder text before image is loaded
+            )}
           </div>
         </div>
       </div>
@@ -335,8 +341,8 @@ export default function main() {
         <div className="flex flex-col items-center w-1/2">
           <p className="text-center font-semibold text-lg mb-2">SAM Score</p>
           <div className="w-[400px] h-[300px] border flex items-center justify-center">
-              {processedImage ? (
-              <img src={processedImage} alt="SAM Segmentation" className="w-full h-full object-cover" />
+              {SAMImage ? (
+              <img src={SAMImage} alt="SAM Segmentation" className="w-full h-full object-contain" />
             ) : (
               <p>SAM segmentation</p> // Placeholder text before image is loaded
             )}
