@@ -46,7 +46,7 @@ export const pollProcessingStatus = async (): Promise<boolean> => {
 };
 
 // Fetch the processed image from the backend
-export const fetchProcessedImages = async (): Promise<{ sam: string; trend: string } | null> => {
+export const fetchProcessedImages = async (): Promise<{ sam: string; samI: string; cnn: string; cnnI: string; trend: string } | null> => {
   try {
     const response = await fetch(`${API_BASE_URL}/get-processed-images`);
     if (!response.ok) {
@@ -55,10 +55,13 @@ export const fetchProcessedImages = async (): Promise<{ sam: string; trend: stri
 
     const data = await response.json();
 
-    const samImage = `data:image/jpeg;base64,${data.sam_image}`;
-    const trendImage = `data:image/jpeg;base64,${data.trend_image}`;
+    const sam   = `data:image/jpeg;base64,${data.sam_image}`;
+    const samI  = `data:image/jpeg;base64,${data.sam_i}`;
+    const cnn   = `data:image/jpeg;base64,${data.cnn_image}`;
+    const cnnI  = `data:image/jpeg;base64,${data.cnn_i}`;
+    const trend = `data:image/jpeg;base64,${data.trend_image}`;
 
-    return { sam: samImage, trend: trendImage };
+    return { sam: sam, samI: samI, cnn: cnn, cnnI: cnnI, trend: trend };
 
   } catch (error) {
     console.error("Error fetching processed images:", error);
