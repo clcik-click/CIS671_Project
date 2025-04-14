@@ -2,139 +2,128 @@
 
 import { useRef, useState, useEffect } from "react";
 import { redrawCanvas, redrawCanvas2 } from "@/app/utils/canvasUtils";
-import { sendDataToBackend, pollProcessingStatus, fetchProcessedImages  } from "@/app/lib/api"; 
+import { sendDataToBackend, pollProcessingStatus, fetchProcessedImages } from "@/app/lib/api";
 
 export default function main() {
-  const canvasOne = useRef<HTMLCanvasElement>(null);
-  const canvasTwo = useRef<HTMLCanvasElement>(null);
+  // Refs for DOM elements
+  const canvasOne = useRef<HTMLCanvasElement>(null); // Main drawing canvas
+  const canvasTwo = useRef<HTMLCanvasElement>(null); // Overview canvas
+  const imgRef = useRef<HTMLImageElement | null>(null); // Original image reference
 
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  // Canvas dimensions
+  const mainCanvasWidth = 800;
+  const mainCanvasHeight = 600;
+  const smallCanvasWidth = 400;
+  const smallCanvasHeight = 300;
 
-  const mainCanvasWidth     = 800;
-  const mainCanvasHeight    = 600;
-  const smallCanvasWidth    = 400;
-  const smallCanvasHeight   = 300;
+  // Image positioning and scale info
+  const [iOffsetX, setIOffsetX] = useState(0);
+  const [iOffsetY, setIOffsetY] = useState(0);
+  const [initScale, setInitScale] = useState(1);
 
-  const [iOffsetX, setIOffsetX]     = useState(0);
-  const [iOffsetY, setIOffsetY]     = useState(0);
-  const [initScale, setInitScale]   = useState(1);
+  const [zoom, setZoom] = useState(1);
 
-  const [zoom, setZoom]           = useState(1);
+  // Image state
+  const [image, setImage] = useState<File | null>(null);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const [imgW, setImgW] = useState(0);
+  const [imgH, setImgH] = useState(0);
 
-  const [image, setImage]         = useState<File | null>(null);
-  const [offsetX, setOffsetX]     = useState(0);
-  const [offsetY, setOffsetY]     = useState(0);
-  const [imgW, setImgW]           = useState(0);
-  const [imgH, setImgH]           = useState(0);
-
+  // Mouse control states
   const [lastMouseX, setLastMouseX] = useState(null);
   const [lastMouseY, setLastMouseY] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isDrawing, setIsDrawing]   = useState(false);
-  const [strokes, setStrokes]       = useState<any[]>([]);
-  const [undoneStrokes, setUndoneStrokes] = useState([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [strokes, setStrokes] = useState<any[]>([]); // All drawn strokes
+  const [undoneStrokes, setUndoneStrokes] = useState([]); // Stack for redo
 
+  // Backend interaction states
   const [processing, setProcessing] = useState(false);
-  const [done, setDone]             = useState(false);
-  const [SAMImage, setSAMImage]     = useState(null);
-  const [SAMI, setSAMI]             = useState(null);
-  const [CNNImage, setCNNImage]     = useState(null);
-  const [CNNI, setCNNI]             = useState(null);
+  const [done, setDone] = useState(false);
+  const [SAMImage, setSAMImage] = useState(null);
+  const [SAMI, setSAMI] = useState(null);
+  const [CNNImage, setCNNImage] = useState(null);
+  const [CNNI, setCNNI] = useState(null);
   const [trendImage, setTrendImage] = useState(null);
 
-  // User inputs image file
+  // Handle image input
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) { 
+    if (e.target.files?.[0]) {
       setImage(e.target.files[0]);
     }
   };
-  
-  // Image processing to fit viewing window
+
+  // Fit the image to the canvas when loaded
   useEffect(() => {
     if (!image) return;
 
     const objectURL = URL.createObjectURL(image);
-    const img       = new Image();
-    img.src         = objectURL;
+    const img = new Image();
+    img.src = objectURL;
 
     img.onload = () => {
-      imgRef.current      = img;
-      const width_ratio   = 800 / img.width;
-      const height_ratio  = 600 / img.height;
-      const scale         = Math.min(width_ratio, height_ratio);
-      const img_w         = img.width * scale; 
-      const img_h         = img.height * scale;
-      const offX          = (800 - img_w) / 2; 
-      const offY          = (600 - img_h) / 2; 
+      imgRef.current = img;
+      const width_ratio = 800 / img.width;
+      const height_ratio = 600 / img.height;
+      const scale = Math.min(width_ratio, height_ratio);
+      const img_w = img.width * scale;
+      const img_h = img.height * scale;
+      const offX = (800 - img_w) / 2;
+      const offY = (600 - img_h) / 2;
 
       setIOffsetX(offX);
       setIOffsetY(offY);
       setInitScale(1 / scale);
-
       setImgW(img_w);
       setImgH(img_h);
       setOffsetX(offX);
       setOffsetY(offY);
-      
     };
   }, [image]);
 
-  // Image processing for the drawing section
+  // Redraw the main canvas with current strokes
   useEffect(() => {
     redrawCanvas(canvasOne, imgRef.current, strokes, offsetX, offsetY, imgW, imgH, zoom);
   }, [strokes, offsetX, offsetY, imgW, imgH, zoom]);
 
-  // Image processing for the overview section
+  // Redraw the overview canvas
   useEffect(() => {
-    redrawCanvas2(canvasTwo, imgRef.current, strokes, iOffsetX/2, iOffsetY/2, imgW/2, imgH/2, 0.5);
+    redrawCanvas2(canvasTwo, imgRef.current, strokes, iOffsetX / 2, iOffsetY / 2, imgW / 2, imgH / 2, 0.5);
   }, [strokes, imgW, imgH]);
 
+  // Zoom handling with scroll
   const onWheel = (e) => {
-    e.preventDefault(); 
-  
-    // Zoom in on scroll up, out on scroll down
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1; 
+    e.preventDefault();
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
     const newZoom = zoom * zoomFactor;
-  
-    // Get the actual center of the canvas (not the webpage)
     const centerX = mainCanvasWidth / 2;
     const centerY = mainCanvasHeight / 2;
-  
-    // Adjust offset to keep zoom centered at the canvas center
     const newOffsetX = centerX - (centerX - offsetX) * (newZoom / zoom);
     const newOffsetY = centerY - (centerY - offsetY) * (newZoom / zoom);
-  
-    // Update state
     setZoom(newZoom);
     setOffsetX(newOffsetX);
     setOffsetY(newOffsetY);
   };
 
-  // Disables normal mouse-scrolling behavior
+  // Attach zoom behavior to canvas scroll
   useEffect(() => {
     const canvasContainer = canvasOne.current;
-
     if (canvasContainer) {
       canvasContainer.addEventListener("wheel", onWheel, { passive: false });
-
-      return () => {
-        canvasContainer.removeEventListener("wheel", onWheel);
-      };
+      return () => canvasContainer.removeEventListener("wheel", onWheel);
     }
   }, []);
 
-  // Handles mouse-click
+  // Mouse down: begin drawing or start panning
   const onMouseDown = (e) => {
-    // Drawing - creates new stroke with an intial point
     if (e.button === 0) {
       setIsDrawing(true);
       const x = (e.nativeEvent.offsetX - offsetX) / zoom;
       const y = (e.nativeEvent.offsetY - offsetY) / zoom;
-      setUndoneStrokes([]); // clears redo history on new action
+      setUndoneStrokes([]);
       setStrokes((prevStrokes) => [...prevStrokes, { points: [{ x, y }] }]);
     }
-
-    // Panning
     if (e.button === 2) {
       setIsDragging(true);
       setLastMouseX(e.clientX);
@@ -142,14 +131,13 @@ export default function main() {
     }
   };
 
-  // Handles mouse-move
+  // Mouse move: drag canvas or draw
   const onMouseMove = (e) => {
     if (!isDrawing && !isDragging) return;
 
-    // Panning
     if (isDragging) {
-      let dx = (e.clientX - lastMouseX)
-      let dy = (e.clientY - lastMouseY)
+      const dx = e.clientX - lastMouseX;
+      const dy = e.clientY - lastMouseY;
       setOffsetX((prev) => prev + dx);
       setOffsetY((prev) => prev + dy);
       setLastMouseX(e.clientX);
@@ -157,11 +145,9 @@ export default function main() {
       return;
     }
 
-    // Drawing - adds more points to the last stroke
     if (isDrawing) {
       const x = (e.nativeEvent.offsetX - offsetX) / zoom;
       const y = (e.nativeEvent.offsetY - offsetY) / zoom;
-
       setStrokes((prevStrokes) => {
         const updatedStrokes = [...prevStrokes];
         if (updatedStrokes.length === 0) return prevStrokes;
@@ -171,19 +157,13 @@ export default function main() {
     }
   };
 
-  // Handles mouse-release
+  // Mouse up: stop drawing or panning
   const onMouseUp = (e) => {
-    // Drawing - stops drawing
-    if (e.button === 0) {
-      setIsDrawing(false);
-    }
-
-    // Panning - stops panning
-    if (e.button === 2) {
-      setIsDragging(false);
-    }
+    if (e.button === 0) setIsDrawing(false);
+    if (e.button === 2) setIsDragging(false);
   };
 
+  // Undo last stroke
   const undo = () => {
     if (strokes.length === 0) return;
     const newStrokes = [...strokes];
@@ -191,7 +171,8 @@ export default function main() {
     setStrokes(newStrokes);
     setUndoneStrokes((prev) => [...prev, popped]);
   };
-  
+
+  // Redo last undone stroke
   const redo = () => {
     if (undoneStrokes.length === 0) return;
     const newUndone = [...undoneStrokes];
@@ -200,36 +181,26 @@ export default function main() {
     setStrokes((prev) => [...prev, recovered]);
   };
 
-  // Disables normal right-click behavior
-  const onContextMenu = (e) => {
-    e.preventDefault(); 
-  };
+  // Prevent browser context menu
+  const onContextMenu = (e) => e.preventDefault();
 
-  // Adjusts strokes to original picture size
+  // Scale strokes back to original image dimensions
   const scaleStrokesBackUp = (strokes: any[]) => {
     return strokes.map(stroke => ({
       points: stroke.points.map(point => ({
-        x: point.x * initScale, 
+        x: point.x * initScale,
         y: point.y * initScale,
       }))
     }));
   };
 
-  // Sends data to Flask
+  // Upload to Flask server
   const sendToBackend = async () => {
-    if (!image) {
-      console.log("No image selected!");
-      return;
-    }
-
-    // Scales strokes back
-    const adjustedStrokes = scaleStrokesBackUp(strokes); 
-    
+    if (!image) return console.log("No image selected!");
+    const adjustedStrokes = scaleStrokesBackUp(strokes);
     setProcessing(true);
     setDone(false);
-
     const uploadSuccess = await sendDataToBackend(image, adjustedStrokes);
-
     if (uploadSuccess) {
       const processingComplete = await pollProcessingStatus();
       if (processingComplete) {
@@ -239,7 +210,7 @@ export default function main() {
     }
   };
 
-  // Fetches data from Flask
+  // Fetch processed result from backend
   const handleFetchProcessedImages = async () => {
     const result = await fetchProcessedImages();
     if (result) {
