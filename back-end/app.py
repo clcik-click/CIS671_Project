@@ -269,10 +269,12 @@ def masks_comparision(user_mask, CNN_prediction, SAM_masks):
     num_regions         = np.max(user_labeled)
     USER_binary_masks   = [(user_labeled == i).astype(np.uint8) for i in range(1, num_regions + 1)]
 
-    CNN_masks           = CNN_prediction['masks'].cpu().numpy() 
-    CNN_combined_mask   = np.zeros_like(user_mask)
-    CNN_masks           = CNN_masks[:, 0] 
-    CNN_binary_masks    = (CNN_masks > 0.5).astype(np.uint8)  
+    score_threshold = 0.7
+    scores = CNN_prediction['scores'].cpu().numpy()
+    keep_indices = np.where(scores >= score_threshold)[0]   
+    CNN_masks = CNN_prediction['masks'][keep_indices].cpu().numpy()[:, 0]
+    CNN_combined_mask = np.zeros_like(user_mask)
+    CNN_binary_masks = (CNN_masks > 0.5).astype(np.uint8)
 
     SAM_combined_mask   = np.zeros_like(user_mask)
     SAM_binary_masks    = [m["segmentation"].astype(np.uint8) for m in SAM_masks]
