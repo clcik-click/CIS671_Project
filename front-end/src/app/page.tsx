@@ -253,8 +253,8 @@ export default function main() {
           <h3 className="text-xl font-semibold mb-2">Questions</h3>
           <ul className="list-disc list-inside space-y-1 text-base">
             <li>What is the IOU (Intersection over Union - Jaccard’s Index) of SAM vs Human Drawn Outline?</li>
-            <li>What is the IOU of TagLab vs Human Drawn Outline?</li>
-            <li>What is the IOU for TagLab vs. SAM?</li>
+            <li>What is the IOU of Mask R-CNN vs Human Drawn Outline?</li>
+            <li>What is the IOU for Mask R-CNN vs. SAM?</li>
             <li>What is better for finding outlines automatically?</li>
           </ul>
         </div>
