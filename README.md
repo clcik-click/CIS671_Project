@@ -15,10 +15,10 @@ This project detects corals  in underwater images using SAM and Mask R-CNN. It h
 git clone https://github.com/clcik-click/CIS673_Project.git
 
 ### Navigate to the project directory
-cd CIS673_Project
+cd CIS671_Project
 
 
-CIS673_Project/
+CIS671_Project/
 
 ├── back-end/              
 │       ├── SAM_models/         # You have to download the SAM models separately
@@ -42,6 +42,7 @@ python app.py
 ### back-end libraries
 pip install flask flask-cors segment-anything torch torchvision scikit-image matplotlib pandas opencv-python numpy
 
+### Contributors
 
 @article{kirillov2023segany,
   title={Segment Anything},
@@ -58,3 +59,8 @@ pip install flask flask-cors segment-anything torch torchvision scikit-image mat
   journal={GitHub repository},
   howpublished={\url{https://github.com/matterport/Mask_RCNN}},
 }
+
+Chat GPT
+-   REST API communication code
+-   Some user interface feature codes
+-   Commenting
